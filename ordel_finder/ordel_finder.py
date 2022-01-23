@@ -102,4 +102,4 @@ def ordel_finder():
     except IndexError:
         print("Word is: {}".format(words[0]))
 
-    # send_email(words[0])
+    send_email(words[0])
