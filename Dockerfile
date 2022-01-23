@@ -35,4 +35,4 @@ COPY . .
 
 # Run the executable
 ENTRYPOINT ["python", "-m", "ordel_finder"]
-CMD ["10"]
+CMD [""]

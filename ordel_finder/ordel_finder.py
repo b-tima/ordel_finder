@@ -4,6 +4,7 @@ import regex as re
 from typing import Callable
 import smtplib
 import datetime
+import os
 from email import message
 
 
@@ -45,7 +46,7 @@ def delete_all_except_condition(list_p: list[str], condition: Callable[[str], bo
 
 def send_email(word):
     gmail_user = "mogge.ordel@gmail.com"
-    gmail_password = "9SYfY#M4A@p6bBtA"
+    gmail_password = os.getenv("GMAIL_PASSWORD")
 
     sent_from = "mogge.ordel@gmail.com"
     to = "morgan.a9904@gmail.com"
