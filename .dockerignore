@@ -5,3 +5,5 @@
 !Pipfile
 !Pipfile.lock
 !ordel_finder
+!*.dic
+!.env
