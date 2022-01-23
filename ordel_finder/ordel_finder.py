@@ -1,3 +1,4 @@
+import random
 import requests
 import time
 import regex as re
@@ -74,11 +75,11 @@ def send_email(word):
 
 def ordel_finder():
     words = read_swe()
-    index = 0
     known = [False] * 5
     found_letters = []
     try:
-        while True:
+        while len(words) > 1:
+            index = random.randint(0, len(words) - 1)
             word = words[index]
             try:
                 response, sleep_time = ask_if_correct(word)
@@ -98,8 +99,7 @@ def ordel_finder():
                 time.sleep(sleep_time * 1.5)
             except InvalidWordException:
                 pass
-            index += 1
     except IndexError:
         print("Word is: {}".format(words[0]))
 
-    send_email(words[0])
+    # send_email(words[0])
