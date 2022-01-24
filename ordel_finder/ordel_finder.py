@@ -12,6 +12,10 @@ from email import message
 class InvalidWordException(Exception):
     pass
 
+class WordFound(Exception):
+    def __init__(self, word):
+        self.word = word
+
 
 def read_swe() -> list[str]:
     dic_file = open("sv_SE.dic", "rb").read()
@@ -81,8 +85,12 @@ def ordel_finder():
         while len(words) > 1:
             index = random.randint(0, len(words) - 1)
             word = words[index]
+            print(word, flush=True)
             try:
                 response, sleep_time = ask_if_correct(word)
+                print(response, len(words), flush=True)
+                if all(c == 1 for c in response):
+                    raise WordFound(word)
                 for i, valid in enumerate(response):
                     if valid == 1 and not known[i]:
                         words = delete_all_except_condition(
@@ -99,7 +107,7 @@ def ordel_finder():
                 time.sleep(sleep_time * 1.5)
             except InvalidWordException:
                 pass
-    except IndexError:
-        print("Word is: {}".format(words[0]))
+    except WordFound as e:
+        print("Word is: {}".format(e.word), flush=True)
 
-    send_email(words[0])
+        send_email(e.word)
