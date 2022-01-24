@@ -82,7 +82,7 @@ def ordel_finder():
     known = [False] * 5
     found_letters = []
     try:
-        while len(words) > 1:
+        while True:
             index = random.randint(0, len(words) - 1)
             word = words[index]
             print(word, flush=True)
