@@ -91,7 +91,6 @@ def ordel_finder():
     attempted_words = []
     try:
         while True:
-            tries += 1
             index = random.randint(0, len(words) - 1)
             print(words)
             word = words[index]
