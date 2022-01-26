@@ -1,13 +1,26 @@
 # ordel_finder
 
+Ordel finder is a python script that attempts to crack the ordel.se word of the day. It does this by going through all the five letter words in the swedish dictionary and reads the response from the ordel.se API.
+
+https://ordel.se/
+
 ## Setup
-```sh
+
+```
 # Install dependencies
 pipenv install --dev
 
-# Setup pre-commit and pre-push hooks
-pipenv run pre-commit install -t pre-commit
-pipenv run pre-commit install -t pre-push
+# Add your email to the .env file
+echo "GMAIL={GMAIL}" >> ".env"
+echo "GMAIL_PASSWORD={GMAIL}" >> ".env"
+
+# Enter the pipenv shell
+pipenv shell
+
+# Build and run the docker image
+sh build.sh
+docker run ordel_finder
+
 ```
 
 ## Credits
