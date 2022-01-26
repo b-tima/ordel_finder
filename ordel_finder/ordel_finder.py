@@ -12,6 +12,7 @@ from email import message
 class InvalidWordException(Exception):
     pass
 
+
 class WordFound(Exception):
     def __init__(self, word):
         self.word = word
@@ -26,7 +27,8 @@ def read_swe() -> list[str]:
         line for line in dic_valid_length if not re.search("[0-9]", line)
     ]
     dic_lower_case = [line.lower() for line in dic_valid_chars]
-    return dic_lower_case
+    dic_no_repeat = list(dict.fromkeys(dic_lower_case))
+    return dic_no_repeat
 
 
 def ask_if_correct(word):
@@ -49,7 +51,7 @@ def delete_all_except_condition(list_p: list[str], condition: Callable[[str], bo
     return new_list
 
 
-def send_email(word):
+def send_email(word, attempts, attempted_words):
     gmail_user = "mogge.ordel@gmail.com"
     gmail_password = os.getenv("GMAIL_PASSWORD")
 
@@ -58,13 +60,17 @@ def send_email(word):
     subject = "Ordel word of the day {}".format(
         datetime.datetime.now().strftime("%Y-%m-%d")
     )
-    body = "The word today is: {}".format(word)
+    body = "The word today is: {}.\n\nIt took {} attempts. The following attempts were made before getting the correct word:".format(
+        word, attempts
+    )
+    for i, word in enumerate(attempted_words[:-1]):
+        body += "\n\t{}. {}".format(i + 1, word)
 
     m = message.Message()
     m.add_header("from", sent_from)
     m.add_header("to", to)
     m.add_header("subject", subject)
-    m.set_payload(body)
+    m.set_payload(body, charset="UTF-8")
 
     try:
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
@@ -81,13 +87,18 @@ def ordel_finder():
     words = read_swe()
     known = [False] * 5
     found_letters = []
+    tries = 0
+    attempted_words = []
     try:
-        while len(words) > 1:
+        while True:
+            tries += 1
             index = random.randint(0, len(words) - 1)
+            print(words)
             word = words[index]
             print(word, flush=True)
             try:
                 response, sleep_time = ask_if_correct(word)
+                attempted_words.append(word)
                 print(response, len(words), flush=True)
                 if all(c == 1 for c in response):
                     raise WordFound(word)
@@ -96,18 +107,26 @@ def ordel_finder():
                         words = delete_all_except_condition(
                             words, lambda x: x[i] == word[i]
                         )
-                        index = 0
                         known[i] = True
                     elif valid == 0 and word[i] not in found_letters:
                         words = delete_all_except_condition(
                             words, lambda x: word[i] in x
                         )
-                        index = 0
                         found_letters.append(word[i])
+                    elif valid == -1:
+                        count = 0
+                        for j in range(5):
+                            if word[i] == word[j] and response[j] == -1:
+                                count += 1
+                        if count > 1:
+                            words = delete_all_except_condition(words, lambda x: word[i] not in x)
                 time.sleep(sleep_time * 1.5)
             except InvalidWordException:
-                pass
+                words.remove(word)
+                tries -= 1
     except WordFound as e:
         print("Word is: {}".format(e.word), flush=True)
 
-        send_email(e.word)
+        send_email(e.word, tries, attempted_words)
+    finally:
+        print("Done")
