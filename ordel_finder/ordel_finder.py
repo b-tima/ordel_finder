@@ -18,6 +18,73 @@ class WordFound(Exception):
         self.word = word
 
 
+def delete_all_except_condition(list_p: list[str], condition: Callable[[str], bool]):
+    new_list = []
+    for word in list_p:
+        if condition(word):
+            new_list.append(word)
+    return new_list
+
+
+class WordReducer:
+    def __init__(self, dictionary):
+        self.__words = dictionary
+        self.__known = [False] * 5
+        self.__found_letter = []
+
+    def make_random_attempt(self):
+        response = []
+        while True:
+            index = random.randint(0, len(self.__words) - 1)
+            word = self.__words[index]
+            try:
+                response = self.__ask_if_correct(word)
+                if all(i == 1 for i in response):
+                    raise WordFound(word)
+                break
+            except InvalidWordException:
+                self.__words.remove(word)
+        self.__reduce_words(word, response)
+        return word, response
+
+    def __reduce_words(self, word, response):
+        for i, valid in enumerate(response):
+            if valid == 1 and not self.__known[i]:
+                self.__correct_letter_and_position(word, i)
+            elif valid == 0 and word[i] not in self.__found_letter:
+                self.__correct_letter_wrong_position(word[i])
+            elif valid == -1:
+                self.__letter_not_in_word(word, i, response)
+
+    def __correct_letter_and_position(self, word, index):
+        self.__words = delete_all_except_condition(
+            self.__words, lambda x: x[index] == word[index]
+        )
+        self.__known[index] = True
+
+    def __correct_letter_wrong_position(self, letter):
+        self.__words = delete_all_except_condition(self.__words, lambda x: letter in x)
+        self.__found_letter.append(letter)
+
+    def __letter_not_in_word(self, word, index, response):
+        count = 0
+        for j in range(5):
+            if word[index] == word[j] and response[j] == -1:
+                count += 1
+        if count > 1:
+            self.__words = delete_all_except_condition(
+                self.__words, lambda x: word[index] not in x
+            )
+
+    def __ask_if_correct(self, word):
+        r = requests.get("http://ordel.se/play?n=0&guess={}".format(word))
+        response = r.json()
+        if "error" in response:
+            raise InvalidWordException()
+        elif "letters" in response:
+            return response["letters"]
+
+
 def read_swe() -> list[str]:
     dic_file = open("sv_SE.dic", "rb").read()
     dic = dic_file.decode("utf-8").split("\n")
@@ -29,26 +96,6 @@ def read_swe() -> list[str]:
     dic_lower_case = [line.lower() for line in dic_valid_chars]
     dic_no_repeat = list(dict.fromkeys(dic_lower_case))
     return dic_no_repeat
-
-
-def ask_if_correct(word):
-    start_time = time.time()
-    r = requests.get("http://ordel.se/play?n=0&guess={}".format(word))
-    elapsed_time = time.time() - start_time
-    response = r.json()
-    if "error" in response:
-        if response["error"] == "INVALID_WORD":
-            raise InvalidWordException()
-    elif "letters" in response:
-        return response["letters"], elapsed_time
-
-
-def delete_all_except_condition(list_p: list[str], condition: Callable[[str], bool]):
-    new_list = []
-    for word in list_p:
-        if condition(word):
-            new_list.append(word)
-    return new_list
 
 
 def send_email(word, attempts, attempted_words):
@@ -80,55 +127,24 @@ def send_email(word, attempts, attempted_words):
         server.close()
     except Exception as e:
         print(e)
-        print("Error sending email")
+        print("Error sending email", flush=True)
 
 
 def ordel_finder():
     words = read_swe()
-    known = [False] * 5
-    found_letters = []
-    tries = 0
     attempted_words = []
+    word_reducer = WordReducer(words)
+
     try:
         while True:
-            index = random.randint(0, len(words) - 1)
-            print(words)
-            word = words[index]
-            print(word, flush=True)
-            try:
-                response, sleep_time = ask_if_correct(word)
-                attempted_words.append(word)
-                print(response, len(words), flush=True)
-                if all(c == 1 for c in response):
-                    raise WordFound(word)
-                for i, valid in enumerate(response):
-                    if valid == 1 and not known[i]:
-                        words = delete_all_except_condition(
-                            words, lambda x: x[i] == word[i]
-                        )
-                        known[i] = True
-                    elif valid == 0 and word[i] not in found_letters:
-                        words = delete_all_except_condition(
-                            words, lambda x: word[i] in x
-                        )
-                        found_letters.append(word[i])
-                    elif valid == -1:
-                        count = 0
-                        for j in range(5):
-                            if word[i] == word[j] and response[j] == -1:
-                                count += 1
-                        if count > 1:
-                            words = delete_all_except_condition(
-                                words, lambda x: word[i] not in x
-                            )
-                time.sleep(sleep_time * 1.5)
-            except InvalidWordException:
-                words.remove(word)
-                tries -= 1
+            word, response = word_reducer.make_random_attempt()
+            print("{}\t{}".format(word, response), flush=True)
+            attempted_words.append(word)
+            time.sleep(0.5)
     except WordFound as e:
         print("Word is: {}".format(e.word), flush=True)
 
         if os.getenv("ENABLE_EMAIL") == "1":
-            send_email(e.word, tries, attempted_words)
+            send_email(e.word, len(attempted_words), attempted_words)
     finally:
         print("Done")
