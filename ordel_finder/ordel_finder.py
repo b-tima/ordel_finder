@@ -13,6 +13,10 @@ class InvalidWordException(Exception):
     pass
 
 
+class WordNotFoundException(Exception):
+    pass
+
+
 class WordFound(Exception):
     def __init__(self, word):
         self.word = word
@@ -29,6 +33,7 @@ def delete_all_except_condition(list_p: list[str], condition: Callable[[str], bo
 class WordReducer:
     def __init__(self, dictionary):
         self.__words = dictionary
+        self.__tested_words = []
         self.__known = [False] * 5
         self.__found_letter = []
 
@@ -41,9 +46,12 @@ class WordReducer:
                 response = self.__ask_if_correct(word)
                 if all(i == 1 for i in response):
                     raise WordFound(word)
+                self.__tested_words.append(word)
                 break
             except InvalidWordException:
                 self.__words.remove(word)
+        if all(w in self.__tested_words for w in self.__words):
+            raise WordNotFoundException()
         self.__reduce_words(word, response)
         return word, response
 
@@ -98,7 +106,7 @@ def read_swe() -> list[str]:
     return dic_no_repeat
 
 
-def send_email(word, attempts, attempted_words):
+def send_email(word, attempts, attempted_words, responses=[], error=False):
     gmail_user = "mogge.ordel@gmail.com"
     gmail_password = os.getenv("GMAIL_PASSWORD")
 
@@ -107,11 +115,17 @@ def send_email(word, attempts, attempted_words):
     subject = "Ordel word of the day {}".format(
         datetime.datetime.now().strftime("%Y-%m-%d")
     )
-    body = "The word today is: {}.\n\nIt took {} attempts. The following attempts were made before getting the correct word:".format(
-        word, attempts
+    body = (
+        "The word today is: {}.\n\nIt took {} attempts. The following attempts were made before getting the correct word:".format(
+            word, attempts
+        )
+        if not error
+        else "Unable to find todays word. The following attempts were made:"
     )
     for i, word in enumerate(attempted_words[:-1]):
-        body += "\n\t{}. {}".format(i + 1, word)
+        body += "\n\t{}. {} -- {}".format(
+            i + 1, word, responses[i] if responses else ""
+        )
 
     m = message.Message()
     m.add_header("from", sent_from)
@@ -133,6 +147,7 @@ def send_email(word, attempts, attempted_words):
 def ordel_finder():
     words = read_swe()
     attempted_words = []
+    attempted_responses = []
     word_reducer = WordReducer(words)
 
     try:
@@ -140,11 +155,23 @@ def ordel_finder():
             word, response = word_reducer.make_random_attempt()
             print("{}\t{}".format(word, response), flush=True)
             attempted_words.append(word)
+            attempted_responses.append(response)
             time.sleep(0.5)
     except WordFound as e:
         print("Word is: {}".format(e.word), flush=True)
 
         if os.getenv("ENABLE_EMAIL") == "1":
             send_email(e.word, len(attempted_words), attempted_words)
+    except WordNotFoundException:
+        print("Todays word was not found.")
+
+        if os.getenv("ENABLE_EMAIL") == "1":
+            send_email(
+                "None",
+                len(attempted_words),
+                attempted_words,
+                attempted_responses,
+                error=True,
+            )
     finally:
         print("Done")
