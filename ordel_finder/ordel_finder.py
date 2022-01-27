@@ -46,11 +46,13 @@ class WordReducer:
                 response = self.__ask_if_correct(word)
                 if all(i == 1 for i in response):
                     raise WordFound(word)
-                self.__tested_words.append(word)
+                self.__words.remove(word)
                 break
             except InvalidWordException:
                 self.__words.remove(word)
-        if all(w in self.__tested_words for w in self.__words):
+                if not self.__words:
+                    break
+        if len(self.__words) == 0:
             raise WordNotFoundException()
         self.__reduce_words(word, response)
         return word, response
@@ -123,9 +125,7 @@ def send_email(word, attempts, attempted_words, responses=[], error=False):
         else "Unable to find todays word. The following attempts were made:"
     )
     for i, word in enumerate(attempted_words[:-1]):
-        body += "\n\t{}. {} -- {}".format(
-            i + 1, word, responses[i] if responses else ""
-        )
+        body += "\n\t{}. {} {}".format(i + 1, word, responses[i] if responses else "")
 
     m = message.Message()
     m.add_header("from", sent_from)
