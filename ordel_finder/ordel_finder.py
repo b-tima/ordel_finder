@@ -118,7 +118,9 @@ def ordel_finder():
                             if word[i] == word[j] and response[j] == -1:
                                 count += 1
                         if count > 1:
-                            words = delete_all_except_condition(words, lambda x: word[i] not in x)
+                            words = delete_all_except_condition(
+                                words, lambda x: word[i] not in x
+                            )
                 time.sleep(sleep_time * 1.5)
             except InvalidWordException:
                 words.remove(word)
@@ -126,6 +128,7 @@ def ordel_finder():
     except WordFound as e:
         print("Word is: {}".format(e.word), flush=True)
 
-        send_email(e.word, tries, attempted_words)
+        if os.getenv("ENABLE_EMAIL") == "1":
+            send_email(e.word, tries, attempted_words)
     finally:
         print("Done")
