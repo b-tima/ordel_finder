@@ -108,7 +108,7 @@ def read_swe() -> list[str]:
 
 
 def send_email(word, attempts, attempted_words, responses=[], error=False):
-    gmail_user = "mogge.ordel@gmail.com"
+    gmail_user = os.getenv("GMAIL_EMAIL")
     gmail_password = os.getenv("GMAIL_PASSWORD")
 
     sent_from = "mogge.ordel@gmail.com"
