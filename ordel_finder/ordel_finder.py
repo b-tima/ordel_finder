@@ -43,16 +43,15 @@ class WordReducer:
             index = random.randint(0, len(self.__words) - 1)
             word = self.__words[index]
             try:
+                self.__words.remove(word)
                 response = self.__ask_if_correct(word)
                 if all(i == 1 for i in response):
                     raise WordFound(word)
-                self.__words.remove(word)
                 break
             except InvalidWordException:
-                self.__words.remove(word)
                 if not self.__words:
                     break
-        if len(self.__words) == 0:
+        if not self.__words:
             raise WordNotFoundException()
         self.__reduce_words(word, response)
         return word, response
