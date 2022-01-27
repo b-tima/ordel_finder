@@ -15,8 +15,8 @@ pipenv install --dev
 # Enable email notifications of the word by typing the following commands:
 echo "ENABLE_EMAIL=1" >> .env
 
-# Add your email to the .env file
-echo "GMAIL={GMAIL}" >> .env
+# Add your email to the .env file (replace {GMAIL} with your own gmail user/password)
+echo "GMAIL_EMAIL={GMAIL}" >> .env
 echo "GMAIL_PASSWORD={GMAIL}" >> .env
 
 # Enter the pipenv shell
