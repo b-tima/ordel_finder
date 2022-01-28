@@ -58,22 +58,26 @@ class WordReducer:
 
     def __reduce_words(self, word, response):
         for i, valid in enumerate(response):
-            if valid == 1 and not self.__known[i]:
+            if valid == 1:
                 self.__correct_letter_and_position(word, i)
-            elif valid == 0 and word[i] not in self.__found_letter:
-                self.__correct_letter_wrong_position(word[i])
+            elif valid == 0:
+                self.__correct_letter_wrong_position(word, i)
             elif valid == -1:
                 self.__letter_not_in_word(word, i, response)
 
     def __correct_letter_and_position(self, word, index):
-        self.__words = delete_all_except_condition(
-            self.__words, lambda x: x[index] == word[index]
-        )
-        self.__known[index] = True
+        if not self.__known[index]:
+            self.__words = delete_all_except_condition(
+                self.__words, lambda x: x[index] == word[index]
+            )
+            self.__known[index] = True
 
-    def __correct_letter_wrong_position(self, letter):
-        self.__words = delete_all_except_condition(self.__words, lambda x: letter in x)
-        self.__found_letter.append(letter)
+    def __correct_letter_wrong_position(self, word, index):
+        if word[index] not in self.__found_letter:
+            self.__words = delete_all_except_condition(
+                self.__words, lambda x: word[index] in x
+            )
+            self.__found_letter.append(word[index])
 
     def __letter_not_in_word(self, word, index, response):
         count = 0
