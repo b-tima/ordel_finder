@@ -16,7 +16,8 @@ pipenv install --dev
 echo "ENABLE_EMAIL=1" >> .env
 
 # Add your email to the .env file (replace {GMAIL} with your own gmail user/password)
-echo "GMAIL_EMAIL={GMAIL}" >> .env
+echo "GMAIL_SENDER={GMAIL}" >> .env
+echo "GMAIL_RECEIVER={GMAIL}" >> .env
 echo "GMAIL_PASSWORD={GMAIL}" >> .env
 
 # Enter the pipenv shell

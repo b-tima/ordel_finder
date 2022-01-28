@@ -108,11 +108,12 @@ def read_swe() -> list[str]:
 
 
 def send_email(word, attempts, attempted_words, responses=[], error=False):
-    gmail_user = os.getenv("GMAIL_EMAIL")
+    gmail_sender = os.getenv("GMAIL_SENDER")
+    gmail_receiver = os.getenv("GMAIL_RECEIVER")
     gmail_password = os.getenv("GMAIL_PASSWORD")
 
-    sent_from = "mogge.ordel@gmail.com"
-    to = "morgan.a9904@gmail.com"
+    sent_from = gmail_sender
+    to = gmail_receiver
     subject = "Ordel word of the day {}".format(
         datetime.datetime.now().strftime("%Y-%m-%d")
     )
@@ -135,7 +136,7 @@ def send_email(word, attempts, attempted_words, responses=[], error=False):
     try:
         server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
         server.ehlo()
-        server.login(gmail_user, gmail_password)
+        server.login(gmail_sender, gmail_password)
         server.sendmail(sent_from, to, m.as_string())
         server.close()
     except Exception as e:
