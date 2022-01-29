@@ -7,7 +7,6 @@ import smtplib
 import datetime
 import os
 from email import message
-import itertools
 
 SWE_ALPH = "abcdefghijklmnopqrstuvwxyzåäö"
 
