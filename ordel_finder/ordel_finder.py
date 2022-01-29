@@ -193,10 +193,20 @@ def ordel_finder():
     attempted_words = []
     attempted_responses = []
     word_reducer = WordReducer(words)
+    brute_force = False
 
     try:
         while True:
-            word, response = word_reducer.make_random_attempt()
+            try:
+                word, response = word_reducer.make_random_attempt()
+            except WordNotFoundException:
+                print(
+                    "Todays word was not found.\nGenerating random unconstrained words",
+                    flush=True,
+                )
+                brute_force = True
+                word_reducer.expand_words_unconstrained()
+                continue
             print("{}\t{}".format(word, response), flush=True)
             attempted_words.append(word)
             attempted_responses.append(response)
@@ -205,22 +215,9 @@ def ordel_finder():
         print("Word is: {}".format(e.word), flush=True)
 
         if os.getenv("ENABLE_EMAIL") == "1":
-            send_email(e.word, len(attempted_words), attempted_words)
-    except WordNotFoundException:
-        print("Todays word was not found.\nGenerating random unconstrained words")
-        word_reducer.expand_words_unconstrained()
-
-        try:
-            while True:
-                word, response = word_reducer.make_random_attempt()
-                print("{}\t{}".format(word, response), flush=True)
-                attempted_words.append(word)
-                attempted_responses.append(response)
-                time.sleep(0.5)
-        except WordFound as e:
-            print("Word is: {}".format(e.word), flush=True)
-
-            if os.getenv("ENABLE_EMAIL") == "1":
+            if not brute_force:
+                send_email(e.word, len(attempted_words), attempted_words)
+            else:
                 send_email(
                     e.word,
                     len(attempted_words),
