@@ -74,23 +74,17 @@ class WordReducer:
         # Step 2: Generate all combinations of letters
         def comb(i):
             if i == 5:
-                return []
+                return [""]
             results = []
             if letter_cols[i] is str:
                 other_results = comb(i + 1)
-                if len(other_results) > 0:
-                    for r in other_results:
-                        results.append(letter_cols[i] + r)
-                else:
-                    results.append(letter_cols[i])
+                for r in other_results:
+                    results.append(letter_cols[i] + r)
             else:
                 for l in letter_cols[i]:
                     other_results = comb(i + 1)
-                    if len(other_results) > 0:
-                        for ll in other_results:
-                            results.append(l + ll)
-                    else:
-                        results.append(l)
+                    for ll in other_results:
+                        results.append(l + ll)
             return results
 
         self.__words = comb(0)
