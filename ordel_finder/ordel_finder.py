@@ -19,6 +19,10 @@ class WordNotFoundException(Exception):
     pass
 
 
+class NotWorthTheEffortException(Exception):
+    pass
+
+
 class WordFound(Exception):
     def __init__(self, word):
         self.word = word
@@ -40,6 +44,7 @@ class WordReducer:
         self.__bad_letters = []
 
     def make_random_attempt(self):
+        self.__check_effort()
         response = []
         while True:
             if not self.__words:
@@ -87,6 +92,11 @@ class WordReducer:
             return results
 
         self.__words = comb(0)
+
+    def __check_effort(self):
+        # Approximate effort to find the word
+        if len(self.__words) * 0.4 > 3600 * 60 * 12:
+            raise NotWorthTheEffortException()
 
     def __reduce_words(self, word, response):
         for i, valid in enumerate(response):
@@ -148,7 +158,9 @@ def read_swe() -> list[str]:
     return dic_no_repeat
 
 
-def send_email(word, attempts, attempted_words, responses=[], error=False):
+def send_email(
+    word, attempts, attempted_words, responses=[], error=False, no_effort=False
+):
     gmail_sender = os.getenv("GMAIL_SENDER")
     gmail_receiver = os.getenv("GMAIL_RECEIVER")
     gmail_password = os.getenv("GMAIL_PASSWORD")
@@ -158,17 +170,22 @@ def send_email(word, attempts, attempted_words, responses=[], error=False):
     subject = "Ordel word of the day {}".format(
         datetime.datetime.now().strftime("%Y-%m-%d")
     )
-    body = (
-        "The word today is: {}.\n\nIt took {} attempts. The following attempts were made before getting the correct word:".format(
-            word, attempts
+    if no_effort:
+        body = "The worst case computation of the word is more than 12 hours, so no attempts to solve to word will be made.\n\nPlease speak to the host of the ordel finder for more information"
+    else:
+        body = (
+            "The word today is: {}.\n\nIt took {} attempts. The following attempts were made before getting the correct word:".format(
+                word, attempts
+            )
+            if not error
+            else 'Unable to find todays word by looking in the dictionary. The word was found to be "{}" from brute force. The following attempts were made:'.format(
+                word
+            )
         )
-        if not error
-        else 'Unable to find todays word by looking in the dictionary. The word was found to be "{}" from brute force. The following attempts were made:'.format(
-            word
-        )
-    )
-    for i, word in enumerate(attempted_words[:-1]):
-        body += "\n\t{}. {} {}".format(i + 1, word, responses[i] if responses else "")
+        for i, word in enumerate(attempted_words[:-1]):
+            body += "\n\t{}. {} {}".format(
+                i + 1, word, responses[i] if responses else ""
+            )
 
     m = message.Message()
     m.add_header("from", sent_from)
@@ -209,7 +226,6 @@ def ordel_finder():
             print("{}\t{}".format(word, response), flush=True)
             attempted_words.append(word)
             attempted_responses.append(response)
-            time.sleep(0.5)
     except WordFound as e:
         print("Word is: {}".format(e.word), flush=True)
 
@@ -224,5 +240,15 @@ def ordel_finder():
                     attempted_responses,
                     error=True,
                 )
+    except NotWorthTheEffortException:
+        if os.getenv("ENABLE_EMAIL") == "1":
+            send_email(
+                None,
+                len(attempted_words),
+                attempted_words,
+                attempted_responses,
+                error=True,
+                no_effort=True,
+            )
     finally:
         print("Done")
