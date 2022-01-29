@@ -70,7 +70,7 @@ class WordReducer:
         # Step 1: Generate all possible search lists
         for i in range(5):
             if self.__known[i]:
-                letter_cols.append(self.__known[i])
+                letter_cols.append([self.__known[i]])
                 banned_letters.append(None)
             else:
                 letter_cols.append(swe_alph_left)
@@ -80,15 +80,10 @@ class WordReducer:
             if i == 5:
                 return [""]
             results = []
-            if letter_cols[i] is str:
+            for l in letter_cols[i]:
                 other_results = comb(i + 1)
-                for r in other_results:
-                    results.append(letter_cols[i] + r)
-            else:
-                for l in letter_cols[i]:
-                    other_results = comb(i + 1)
-                    for ll in other_results:
-                        results.append(l + ll)
+                for ll in other_results:
+                    results.append(l + ll)
             return results
 
         self.__words = comb(0)
