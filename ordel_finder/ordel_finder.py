@@ -245,5 +245,3 @@ def ordel_finder():
                 error=True,
                 no_effort=True,
             )
-    finally:
-        print("Done")
