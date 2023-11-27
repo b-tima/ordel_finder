@@ -212,7 +212,7 @@ def ordel_finder():
                 word, response = word_reducer.make_random_attempt()
             except WordNotFoundException:
                 print(
-                    "Todays word was not found.\nGenerating random unconstrained words",
+                    "Todays word was not found in dictionary.\nGenerating random constrained words",
                     flush=True,
                 )
                 brute_force = True
